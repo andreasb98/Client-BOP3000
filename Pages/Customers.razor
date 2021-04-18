@@ -1,0 +1,73 @@
+﻿@page "/customers"
+@inject HttpClient http; 
+
+
+<h1>Customers</h1>
+
+<p>Something something customers</p>
+
+<div class="card">
+    <div class="card-body">
+        Employees
+        <input type="text" class="Search" placeholder="Search" @bind-value="SearchTerm" @bind-value:event="oninput" />
+    </div>
+</div>
+
+<table class="table table-hover table-striped table-dark">
+    <thead class="thead-dark">
+        <tr>
+            <th>ID</th>
+            <th>Phone</th>
+            <th>Name</th>
+            <th>Email</th>
+            <th>EmploymentDate</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var Employee in FilteredEmployees)
+        {
+            <tr>
+                <td>@Employee.Id</td>
+                <td>@Employee.Phone</td>
+                <td>@Employee.Name</td>
+                <td>@Employee.Email</td>
+                <td>@Employee.EmploymentDate</td>
+                <td><a @onclick="@GetEmployees"><i class="fas fa-trash-alt"></i></a></td>
+            </tr>
+        }
+    </tbody>
+</table>
+
+@code{
+    //Initialiserer SearchTerm for å unngå nullpointerexception
+    string SearchTerm { get; set; } = "";
+
+    List<Employee> Employees = new List<Employee>();
+
+    private async Task GetEmployees()
+    {
+        Employees = await http.GetJsonAsync<List<Employee>>("https://localhost:44337/api/employees");
+    }
+
+    List<Employee> FilteredEmployees => Employees.Where(i => i.Name.ToLower().Contains(SearchTerm.ToLower())
+    || i.Email.ToLower().Contains(SearchTerm.ToLower())
+    || i.EmploymentDate.ToLower().Contains(SearchTerm.ToLower())
+    || i.Phone.ToLower().Contains(SearchTerm.ToLower())).ToList();
+
+
+
+    public class Employee
+    {
+        public int Id { get; set; } = 0;
+        public string Phone { get; set; } = "";
+        public string Name { get; set; } = "";
+        public string Email { get; set; } = "";
+        public string EmploymentDate { get; set; } = "";
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        GetEmployees();
+        await Task.Delay(500);
+    }
+}

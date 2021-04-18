@@ -1,0 +1,115 @@
+﻿@page "/"
+
+
+@inject HttpClient http;
+
+<h1>Employees</h1>
+
+<div class="card">
+    <div class="card-body">
+        Employees
+        <input type="text" class="Search" placeholder="Search" @bind-value="SearchTerm" @bind-value:event="oninput" />
+        <br />
+        <input type="text" @bind="employee.Name" placeholder="Type Name" />
+        <input type="text" @bind="employee.Email" placeholder="Type Email" />
+        <input type="text" @bind="employee.EmploymentDate" placeholder="Type Date of Em" />
+        <input type="text" @bind="employee.Phone" placeholder="Type Phone" />
+        <button class="btn btn-success" @onclick="SaveEmployee">+ Add</button>
+    </div>
+</div>
+
+
+<table class="table table-hover table-striped table-dark">
+    <thead class="thead-dark">
+        <tr>
+            <th>ID</th>
+            <th>Phone</th>
+            <th>Name</th>
+            <th>Email</th>
+            <th>EmploymentDate</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var Employee in FilteredEmployees)
+        {
+            <tr>
+                <td>@Employee.Id</td>
+                <td>@Employee.Phone</td>
+                <td>@Employee.Name</td>
+                <td>@Employee.Email</td>
+                <td>@Employee.EmploymentDate</td>
+                <td><a @onclick="(()=>DeleteEmployee(Employee))"><i class="fas fa-trash-alt"></i></a></td>
+            </tr>
+        }
+    </tbody>
+</table>
+
+
+@code{
+    //Initialiserer SearchTerm for å unngå nullpointerexception
+    string SearchTerm { get; set; } = "";
+
+    List<Employee> Employees = new List<Employee>();
+    Employee employee = new Employee();
+   
+    
+
+
+    private async Task GetEmployees()
+    {
+        Employees = await http.GetJsonAsync<List<Employee>>("https://localhost:44337/api/employees");
+        Console.WriteLine("Executed GetEmployees");
+    }
+
+
+    private async Task SaveEmployee()
+    {
+        
+        await http.PostJsonAsync("https://localhost:44337/api/employees", employee);  
+        
+        await GetEmployees();
+    }
+
+
+    private async Task EditEmployee()
+    {
+         await http.PutJsonAsync("https://localhost:44337/api/employees", employee);
+    }
+
+    private async Task DeleteEmployee(Employee oEmployee)
+    {
+        await http.DeleteAsync("https://localhost:44337/api/employees?id=" + oEmployee.Id);
+        Console.WriteLine("Executed Delete on " + oEmployee.Id);
+        Employees.RemoveAll(x => x.Id == oEmployee.Id);
+    }
+
+    private void SetEmployeeProperties(Employee oEmployee)
+    {
+        employee = oEmployee;
+    }
+
+    List<Employee> FilteredEmployees => Employees.Where(i => i.Name.ToLower().Contains(SearchTerm.ToLower())
+            || i.Email.ToLower().Contains(SearchTerm.ToLower())
+            || i.EmploymentDate.ToLower().Contains(SearchTerm.ToLower())
+            || i.Phone.ToLower().Contains(SearchTerm.ToLower())).ToList();
+
+
+
+    public class Employee
+    {
+        public int Id { get; set; } = 0;
+        public string Phone { get; set; } = "";
+        public string Name { get; set; } = "";
+        public string Email { get; set; } = "";
+        public string EmploymentDate { get; set; } = "";
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        await GetEmployees();
+        await Task.Delay(500);
+    }
+
+}
+
+
